@@ -1,0 +1,18 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# This Caddy is reached directly by LAN clients because MikroTik returns the
+# homelab address for HUB_DOMAIN. It gets an independent public certificate.
+https://{$HUB_DOMAIN} {
+	tls {
+		issuer acme {
+			# Port 443 is private; HTTP-01 arrives through the droplet tunnel.
+			disable_tlsalpn_challenge
+		}
+	}
+
+	encode zstd gzip
+	reverse_proxy hub:8090
+	log
+}

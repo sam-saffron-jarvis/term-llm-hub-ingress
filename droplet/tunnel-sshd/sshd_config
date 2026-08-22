@@ -1,0 +1,37 @@
+Port 22022
+Protocol 2
+
+HostKey /etc/ssh/keys/ssh_host_ed25519_key
+
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+UsePAM no
+
+AllowUsers tunnel
+AllowAgentForwarding no
+AllowStreamLocalForwarding no
+X11Forwarding no
+PermitTTY no
+PermitUserEnvironment no
+PermitUserRC no
+
+# Reverse listeners must bind to the container network so Caddy, in a separate
+# container, can reach them. Docker does not publish these ports to the host.
+GatewayPorts clientspecified
+
+ClientAliveInterval 60
+ClientAliveCountMax 3
+LoginGraceTime 20
+MaxAuthTries 1
+MaxStartups 3:50:10
+
+LogLevel VERBOSE
+
+Match User tunnel
+    AllowTcpForwarding remote
+    PermitListen 0.0.0.0:18080 0.0.0.0:18081
+    MaxSessions 0
+    ForceCommand /bin/false

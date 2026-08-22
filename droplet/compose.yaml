@@ -1,0 +1,62 @@
+name: term-llm-hub-edge
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    environment:
+      HUB_DOMAIN: ${HUB_DOMAIN:?set HUB_DOMAIN in droplet/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in droplet/.env}
+      EDGE_PROXY_SOURCE_CIDR: ${EDGE_PROXY_SOURCE_CIDR:-172.31.0.1/32}
+    # HAProxy owns public :80/:443. These loopback-only host ports are fully
+    # configurable and map to Caddy's normal container ports.
+    ports:
+      - "${EDGE_BIND_IP:-127.0.0.1}:${EDGE_HTTP_PORT:-19080}:80"
+      - "${EDGE_BIND_IP:-127.0.0.1}:${EDGE_HTTPS_PORT:-19443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - public
+      - tunnel
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  tunnel-sshd:
+    build:
+      context: ./tunnel-sshd
+    restart: unless-stopped
+    ports:
+      - "${TUNNEL_SSH_BIND:-0.0.0.0}:${TUNNEL_SSH_PORT:-22022}:22022"
+    volumes:
+      - ./secrets/tunnel_authorized_keys:/run/secrets/tunnel_authorized_keys:ro
+      - ./secrets/ssh_host_ed25519_key:/etc/ssh/keys/ssh_host_ed25519_key:ro
+      - ./secrets/ssh_host_ed25519_key.pub:/etc/ssh/keys/ssh_host_ed25519_key.pub:ro
+    networks:
+      - public
+      - tunnel
+    healthcheck:
+      # Prove both ACME reachability and an end-to-end HTTP request through the
+      # reverse application tunnel, not merely that autossh left sockets open.
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 18080 && wget -qO- http://127.0.0.1:18081/healthz | grep -q '\"status\":\"ok\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  public:
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+  tunnel:
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:

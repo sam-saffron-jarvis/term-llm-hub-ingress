@@ -1,0 +1,119 @@
+name: term-llm-hub-home
+
+services:
+  hub:
+    build:
+      context: ./hub
+      args:
+        TERM_LLM_VERSION: ${TERM_LLM_VERSION:-v0.0.403}
+        TERM_LLM_SHA256_AMD64: ${TERM_LLM_SHA256_AMD64:?set TERM_LLM_SHA256_AMD64 in home/.env}
+        TERM_LLM_SHA256_ARM64: ${TERM_LLM_SHA256_ARM64:?set TERM_LLM_SHA256_ARM64 in home/.env}
+    restart: unless-stopped
+    command:
+      - serve
+      - hub
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8090"
+      - --auth
+      - passkey
+      - --public-url
+      - https://${HUB_DOMAIN:?set HUB_DOMAIN in home/.env}/
+      - --contain=false
+      - --nodes-file
+      - /data/nodes.json
+      - --passkey-auth-file
+      - /data/auth.json
+      - --passkey-trusted-proxy
+      - 172.30.0.10
+      - --passkey-trusted-proxy
+      - 172.30.0.20
+    volumes:
+      - hub_data:/data
+      - ./secrets/hub_registration_token:/run/secrets/hub_registration_token:ro
+    networks:
+      hub:
+        ipv4_address: 172.30.0.30
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/healthz | grep -q '\"status\":\"ok\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    environment:
+      HUB_DOMAIN: ${HUB_DOMAIN:?set HUB_DOMAIN in home/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in home/.env}
+    ports:
+      - "${LOCAL_BIND_IP:-0.0.0.0}:80:80"
+      - "${LOCAL_BIND_IP:-0.0.0.0}:443:443"
+      - "${LOCAL_BIND_IP:-0.0.0.0}:443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      hub:
+        ipv4_address: 172.30.0.10
+    depends_on:
+      hub:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  autossh:
+    build:
+      context: ./autossh
+    restart: unless-stopped
+    environment:
+      DROPLET_HOST: ${DROPLET_HOST:?set DROPLET_HOST in home/.env}
+      TUNNEL_SSH_PORT: ${TUNNEL_SSH_PORT:-22022}
+      REMOTE_ACME_PORT: "18080"
+      REMOTE_HUB_PORT: "18081"
+      LOCAL_ACME_TARGET: caddy:80
+      LOCAL_HUB_TARGET: hub:8090
+    volumes:
+      - ./secrets/tunnel_ed25519:/run/secrets/tunnel_ed25519:ro
+      - ./secrets/known_hosts:/run/secrets/known_hosts:ro
+    networks:
+      hub:
+        ipv4_address: 172.30.0.20
+    depends_on:
+      caddy:
+        condition: service_started
+      hub:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  hub:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  hub_data:
+  caddy_data:
+  caddy_config:

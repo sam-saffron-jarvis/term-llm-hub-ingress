@@ -1,0 +1,49 @@
+{
+	email {$ACME_EMAIL}
+
+	# HAProxy sends PROXY v2 on both backends so public client addresses survive
+	# TCP passthrough. Only the fixed Docker bridge gateway may speak it.
+	servers {
+		listener_wrappers {
+			proxy_protocol {
+				timeout 2s
+				allow {$EDGE_PROXY_SOURCE_CIDR}
+				fallback_policy require
+			}
+			tls
+		}
+	}
+}
+
+# The outer Caddy deliberately does not use HTTP-01 for its own certificate.
+# Every HTTP-01 token is therefore safe to forward to the inner Caddy.
+http://{$HUB_DOMAIN} {
+	@acme path /.well-known/acme-challenge/*
+
+	handle @acme {
+		reverse_proxy tunnel-sshd:18080
+	}
+
+	handle {
+		redir https://{$HUB_DOMAIN}{uri} permanent
+	}
+}
+
+https://{$HUB_DOMAIN} {
+	tls {
+		issuer acme {
+			disable_http_challenge
+		}
+	}
+
+	encode zstd gzip
+
+	# Caddy handles WebSocket upgrades and streaming automatically.
+	reverse_proxy tunnel-sshd:18081 {
+		health_uri /healthz
+		health_interval 30s
+		health_timeout 5s
+	}
+
+	log
+}

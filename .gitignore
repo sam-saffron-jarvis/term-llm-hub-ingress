@@ -1,0 +1,21 @@
+# Local secrets and deployment-specific values
+**/.env
+**/.env.*
+!**/.env.example
+**/secrets/*
+!**/secrets/.gitkeep
+
+# Private key material, wherever it lands. Public keys stay trackable.
+*.pem
+*_ed25519
+*_ed25519_key
+*_rsa
+*_rsa_key
+
+# Runtime state
+**/data/
+*.log
+
+# Editor and OS noise
+.DS_Store
+*.swp

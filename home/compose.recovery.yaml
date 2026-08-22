@@ -1,0 +1,4 @@
+services:
+  hub:
+    volumes:
+      - ./secrets/passkey_recovery_token:/run/secrets/passkey_recovery_token:ro

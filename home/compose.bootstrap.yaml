@@ -1,0 +1,4 @@
+services:
+  hub:
+    volumes:
+      - ./secrets/passkey_bootstrap_token:/run/secrets/passkey_bootstrap_token:ro

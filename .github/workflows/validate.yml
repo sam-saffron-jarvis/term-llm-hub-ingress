@@ -1,0 +1,22 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Install HAProxy validator
+        run: sudo apt-get update && sudo apt-get install -y haproxy
+      - name: Validate shell, proxy, and Compose files
+        run: ./scripts/validate.sh
+      - name: Build custom images
+        run: |
+          docker compose --env-file droplet/.env.example -f droplet/compose.yaml build
+          docker compose --env-file home/.env.example -f home/compose.yaml build

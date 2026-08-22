@@ -1,0 +1,20 @@
+# Merge these ACL/backend fragments into the existing HAProxy configuration.
+# HAProxy must pass TLS through unchanged so Caddy can answer TLS-ALPN-01 and
+# terminate ordinary HTTPS itself.
+
+# In the existing public HTTP frontend:
+#   acl host_term_llm_hub hdr(host) -i hub.example.com
+#   use_backend term_llm_hub_http if host_term_llm_hub
+
+backend term_llm_hub_http
+    mode http
+    server term_llm_hub 127.0.0.1:19080 check send-proxy-v2
+
+# In the existing public TLS frontend (mode tcp):
+#   tcp-request inspect-delay 5s
+#   tcp-request content accept if { req_ssl_hello_type 1 }
+#   use_backend term_llm_hub_ssl if { req_ssl_sni -i hub.example.com }
+
+backend term_llm_hub_ssl
+    mode tcp
+    server term_llm_hub 127.0.0.1:19443 check send-proxy-v2
