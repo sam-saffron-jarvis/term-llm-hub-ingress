@@ -22,6 +22,19 @@ After enrolment, remove the bootstrap material and run the base stack as documen
 docker compose up -d
 ```
 
+When Caddy uses the optional dedicated-LAN-IP mode, include
+`-f compose.yaml -f compose.lan-ip.yaml` in every lifecycle command and append
+`-f compose.bootstrap.yaml` or `-f compose.recovery.yaml` when needed. For
+example, a first-passkey start is:
+
+```bash
+docker compose \
+  -f compose.yaml \
+  -f compose.lan-ip.yaml \
+  -f compose.bootstrap.yaml \
+  up -d
+```
+
 Stop in the opposite order. `docker compose down` at home removes the reverse listeners immediately; the edge remains up but returns `502` until the tunnel returns.
 
 ## Status

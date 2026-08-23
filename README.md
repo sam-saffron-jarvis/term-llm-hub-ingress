@@ -159,6 +159,41 @@ The home stack runs:
 
 Hub itself is not published on a host port; only Caddy and the tunnel client can reach it.
 
+### Optional: give Caddy a dedicated LAN IP
+
+If another proxy already owns ports 80 and 443 on every host interface, attach
+Caddy directly to an existing macvlan or ipvlan network instead of publishing
+host ports. Reserve an unused address outside the DHCP pool, then set the
+following deployment-specific values in `home/.env`:
+
+```dotenv
+CADDY_LAN_NETWORK=homelab_lan
+CADDY_LAN_IP=192.168.50.11
+```
+
+The external Docker network must already exist and cover `CADDY_LAN_IP`. Start
+the first-passkey stack with the dedicated-IP override:
+
+```bash
+docker compose \
+  -f compose.yaml \
+  -f compose.lan-ip.yaml \
+  -f compose.bootstrap.yaml \
+  up -d --build
+```
+
+For routine starts after enrolment, omit only the bootstrap override:
+
+```bash
+docker compose -f compose.yaml -f compose.lan-ip.yaml up -d
+```
+
+Caddy remains attached to the private `hub` network as well, so autossh and Hub
+continue to use their internal addresses. The override removes Caddy's host port
+publications; use `CADDY_LAN_IP` for the split-DNS record. Include the same
+Compose files when running `down`, `logs`, or other lifecycle commands so
+Compose operates on the intended model.
+
 ## 4. Add split DNS
 
 Follow [`docs/mikrotik.md`](docs/mikrotik.md). The essential override is:

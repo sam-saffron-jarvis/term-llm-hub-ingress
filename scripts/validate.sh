@@ -36,6 +36,15 @@ docker compose --env-file "$root/home/.env.example" \
   -f "$root/home/compose.yaml" \
   -f "$root/home/compose.recovery.yaml" config --quiet
 
+docker compose --env-file "$root/home/.env.example" \
+  -f "$root/home/compose.yaml" \
+  -f "$root/home/compose.lan-ip.yaml" config --quiet
+
+docker compose --env-file "$root/home/.env.example" \
+  -f "$root/home/compose.yaml" \
+  -f "$root/home/compose.lan-ip.yaml" \
+  -f "$root/home/compose.bootstrap.yaml" config --quiet
+
 validate_caddyfile() {
   file=$1
   if command -v caddy >/dev/null 2>&1; then

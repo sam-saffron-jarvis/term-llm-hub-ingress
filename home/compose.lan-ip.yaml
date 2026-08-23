@@ -1,0 +1,13 @@
+services:
+  caddy:
+    # Reach Caddy directly on the LAN instead of publishing host ports. This is
+    # useful when another process already owns ports 80 and 443 on the host.
+    ports: !reset []
+    networks:
+      lan:
+        ipv4_address: ${CADDY_LAN_IP:?set CADDY_LAN_IP in home/.env}
+
+networks:
+  lan:
+    name: ${CADDY_LAN_NETWORK:?set CADDY_LAN_NETWORK in home/.env}
+    external: true

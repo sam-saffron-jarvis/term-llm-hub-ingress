@@ -75,7 +75,13 @@ services:
   autossh:
     build:
       context: ./autossh
+      args:
+        AUTOSSH_UID: ${AUTOSSH_UID:-1000}
+        AUTOSSH_GID: ${AUTOSSH_GID:-1000}
     restart: unless-stopped
+    # Match the owner of the bind-mounted 0600 SSH files. Running as their
+    # unprivileged owner avoids granting root DAC capabilities to this service.
+    user: "${AUTOSSH_UID:-1000}:${AUTOSSH_GID:-1000}"
     environment:
       DROPLET_HOST: ${DROPLET_HOST:?set DROPLET_HOST in home/.env}
       TUNNEL_SSH_PORT: ${TUNNEL_SSH_PORT:-22022}
