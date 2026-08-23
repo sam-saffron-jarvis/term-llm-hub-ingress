@@ -136,7 +136,27 @@ Move the archive into encrypted durable storage rather than leaving it as an une
 
 ## Updating term-llm
 
-Change `TERM_LLM_VERSION` and both architecture-specific SHA-256 values in `home/.env`, then rebuild only Hub:
+Run the home updater whenever you want to deploy the latest published release:
+
+```bash
+cd home
+./update-term-llm.sh
+```
+
+If the configured version is already current, the script exits without changing
+anything. Otherwise it downloads both Linux release archives, verifies that they
+contain the expected executable, calculates their SHA-256 values, and updates the
+three pinned `TERM_LLM_*` settings in `home/.env`. It then rebuilds only Hub and
+waits for its container health check. A failed build leaves the running Hub alone;
+a failed health check triggers a rebuild and rollback to the previous pin.
+
+The updater requires `curl`, `docker compose`, `tar`, and `sha256sum` on the home
+host. It discovers releases and downloads assets from GitHub, so the calculated
+hashes preserve repeatable subsequent builds but are not an independent signature
+of the upstream release.
+
+To select a release manually instead, change `TERM_LLM_VERSION` and both
+architecture-specific SHA-256 values in `home/.env`, then run:
 
 ```bash
 cd home
@@ -145,7 +165,9 @@ docker compose up -d hub
 curl -fsS https://hub.example.com/healthz
 ```
 
-The image verifies the selected release archive against the explicit SHA-256 pinned in `.env`; it does not trust a checksum downloaded beside the archive.
+The image always verifies the selected release archive against the explicit
+SHA-256 pinned in `.env`; it does not trust a checksum downloaded beside the
+archive.
 
 ## Changing the droplet SSH hostname
 

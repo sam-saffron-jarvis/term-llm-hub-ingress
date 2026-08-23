@@ -15,6 +15,7 @@ for script in \
   "$root/scripts/generate-secrets.sh" \
   "$root/scripts/generate-recovery-token.sh" \
   "$root/scripts/validate-haproxy.sh" \
+  "$root/home/update-term-llm.sh" \
   "$root/droplet/tunnel-sshd/entrypoint.sh" \
   "$root/home/autossh/entrypoint.sh" \
   "$root/home/hub/entrypoint.sh"

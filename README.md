@@ -45,6 +45,7 @@ droplet/
   tunnel-sshd/
 home/
   compose.yaml              term-llm Hub, local Caddy, autossh
+  update-term-llm.sh        manually update Hub to the latest release
   Caddyfile
   hub/
   autossh/
