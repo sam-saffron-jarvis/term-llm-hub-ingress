@@ -143,20 +143,36 @@ cd home
 ./update-term-llm.sh
 ```
 
-If the configured version is already current, the script exits without changing
-anything. Otherwise it downloads both Linux release archives, verifies that they
-contain the expected executable, calculates their SHA-256 values, and updates the
-three pinned `TERM_LLM_*` settings in `home/.env`. It then rebuilds only Hub and
-waits for its container health check. A failed build leaves the running Hub alone;
-a failed health check triggers a rebuild and rollback to the previous pin.
+To deploy the latest commit on upstream's `main` branch instead, opt in explicitly:
 
-The updater requires `curl`, `docker compose`, `tar`, and `sha256sum` on the home
-host. It discovers releases and downloads assets from GitHub, so the calculated
-hashes preserve repeatable subsequent builds but are not an independent signature
-of the upstream release.
+```bash
+cd home
+./update-term-llm.sh --main
+```
 
-To select a release manually instead, change `TERM_LLM_VERSION` and both
-architecture-specific SHA-256 values in `home/.env`, then run:
+The default mode downloads both Linux release archives, verifies that they contain
+an executable, calculates their SHA-256 values, and updates the release pin in
+`home/.env`. The `--main` mode resolves `main` with Git, records its exact 40-character
+commit in `TERM_LLM_SOURCE_COMMIT`, and builds that pinned source inside the Hub
+image. Running the default updater again clears the source commit and returns the
+Hub to the latest release, even when `TERM_LLM_VERSION` already names that release.
+If the selected release or main commit is already current, the script exits without
+changing anything.
+
+After updating the pin, the script rebuilds only Hub and waits for its container
+health check. A failed build leaves the running Hub alone; a failed health check
+triggers a rebuild and rollback to the complete previous pin.
+
+The updater requires `curl`, `docker compose`, `tar`, `grep`, and `sha256sum` on the
+home host, plus `git` when using `--main`. It discovers releases and downloads assets
+from GitHub, so the calculated release hashes preserve repeatable subsequent builds
+but are not an independent signature of the upstream release. Main builds are pinned
+to an exact Git commit, but unlike releases they compile untagged, potentially
+unstable upstream code.
+
+To select a release manually instead, clear `TERM_LLM_SOURCE_COMMIT`, change
+`TERM_LLM_VERSION` and both architecture-specific SHA-256 values in `home/.env`,
+then run:
 
 ```bash
 cd home

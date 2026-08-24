@@ -6,6 +6,7 @@ services:
       context: ./hub
       args:
         TERM_LLM_VERSION: ${TERM_LLM_VERSION:-v0.0.403}
+        TERM_LLM_SOURCE_COMMIT: ${TERM_LLM_SOURCE_COMMIT:-}
         TERM_LLM_SHA256_AMD64: ${TERM_LLM_SHA256_AMD64:?set TERM_LLM_SHA256_AMD64 in home/.env}
         TERM_LLM_SHA256_ARM64: ${TERM_LLM_SHA256_ARM64:?set TERM_LLM_SHA256_ARM64 in home/.env}
     restart: unless-stopped
