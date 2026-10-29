@@ -41,6 +41,10 @@ https://{$HUB_DOMAIN} {
 	# Caddy handles WebSocket upgrades and streaming automatically.
 	reverse_proxy tunnel-sshd:18081 {
 		health_uri /healthz
+		# Hub validates Host; probes must use the public hostname too.
+		health_headers {
+			Host {$HUB_DOMAIN}
+		}
 		health_interval 30s
 		health_timeout 5s
 	}
